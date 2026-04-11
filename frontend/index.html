@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Simulator</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0b0b0f;
+        color: #ffffff;
+        font-family: "Segoe UI", sans-serif;
+      }
+
+      #boot-fallback {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
+
+      #boot-fallback .boot-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      #boot-fallback .boot-card,
+      #boot-fallback .boot-hero {
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: linear-gradient(180deg, rgba(42, 42, 53, 0.86), rgba(22, 22, 29, 0.78));
+        padding: 20px;
+      }
+
+      #boot-fallback .boot-hero {
+        margin-bottom: 24px;
+      }
+
+      #boot-fallback .boot-kicker {
+        color: #b388ff;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        font-size: 0.72rem;
+        margin: 0 0 8px;
+      }
+
+      #boot-fallback h1,
+      #boot-fallback h2,
+      #boot-fallback p {
+        margin: 0;
+      }
+
+      #boot-fallback h1 {
+        font-size: clamp(2rem, 4vw, 3.6rem);
+        max-width: 12ch;
+        line-height: 0.98;
+        margin-bottom: 14px;
+      }
+
+      #boot-fallback .boot-note {
+        color: #b9b9c9;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot-fallback">
+      <section class="boot-hero">
+        <p class="boot-kicker">London Stock Exchange Replay</p>
+        <h1>What if you traded 2015 with hindsight?</h1>
+        <p class="boot-note">
+          The app is loading the historical market replay, portfolio dashboard, charts, trading panel, and AI recommendations.
+        </p>
+      </section>
+      <section class="boot-grid">
+        <article class="boot-card">
+          <p class="boot-kicker">Portfolio</p>
+          <h2>Value, cash, and P&amp;L cards</h2>
+        </article>
+        <article class="boot-card">
+          <p class="boot-kicker">Replay</p>
+          <h2>Timeline slider, play, pause, reset</h2>
+        </article>
+        <article class="boot-card">
+          <p class="boot-kicker">Market</p>
+          <h2>Stock cards and main chart view</h2>
+        </article>
+        <article class="boot-card">
+          <p class="boot-kicker">Trading</p>
+          <h2>Holdings table, trade panel, recommendations</h2>
+        </article>
+      </section>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
