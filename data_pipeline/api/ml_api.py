@@ -21,6 +21,7 @@ app = FastAPI(title="Stock Simulator ML API")
 def load_assets() -> tuple[pd.DataFrame, object | None, list[str]]:
 	dataframe = pd.read_csv(FEATURES_PATH)
 	if MODEL_PATH.exists() and MODEL_PATH.stat().st_size > 0:
+		# Model bundle includes its own feature order for safer inference.
 		bundle = joblib.load(MODEL_PATH)
 		return dataframe, bundle["model"], bundle["features"]
 	return dataframe, None, []
@@ -35,6 +36,7 @@ def predict(ticker: str) -> dict:
 		raise HTTPException(status_code=404, detail="Ticker not found in processed feature set.")
 
 	latest = ticker_frame.iloc[-1]
+	# Falls back to a simple momentum proxy when no trained model is available yet.
 	predicted_return = float(model.predict([latest[feature_columns]])[0]) if model is not None else float(latest["return_5d"])
 	action = "buy" if predicted_return > 0.01 else "sell" if predicted_return < -0.01 else "hold"
 

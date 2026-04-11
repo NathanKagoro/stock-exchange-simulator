@@ -52,6 +52,7 @@ export const useAppStore = create((set, get) => ({
 		set({ loading: true, error: null });
 
 		try {
+			// Prime all dashboard sections in parallel for quicker first paint.
 			const [marketState, portfolio, recommendations] = await Promise.all([
 				api.fetchMarketState(),
 				api.fetchPortfolio(),
@@ -88,6 +89,7 @@ export const useAppStore = create((set, get) => ({
 			]);
 
 			const currentTicker = get().selectedTicker;
+			// Keeps user focus on the currently selected stock whenever possible.
 			const selectedTicker =
 				overrideTicker ??
 				(keepSelection && marketState.market.some((stock) => stock.ticker === currentTicker)

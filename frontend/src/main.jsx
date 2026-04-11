@@ -17,6 +17,7 @@ class RootErrorBoundary extends React.Component {
 	}
 
 	componentDidCatch(error) {
+		// Keep a readable browser-side trace when render fails during development.
 		console.error("Stock simulator render failure:", error);
 	}
 

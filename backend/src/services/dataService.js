@@ -64,6 +64,7 @@ function buildTicker(name, index, usedTickers) {
 		.filter(Boolean)
 		.filter((token) => !IGNORED_TOKENS.has(token));
 
+	// Builds deterministic pseudo-tickers from company names in the wide CSV.
 	let baseTicker = cleanedTokens
 		.slice(0, 4)
 		.map((token, tokenIndex) => (tokenIndex === 0 ? token.slice(0, 3) : token[0]))
@@ -109,6 +110,7 @@ function normalizeSeries(values) {
 	}
 
 	const normalized = [];
+	// Forward-fill sparse cells so the replay always has a usable close value.
 	let lastKnown = firstValid;
 
 	for (const value of values) {
@@ -125,12 +127,14 @@ function normalizeSeries(values) {
 
 function loadMarketDataset() {
 	if (cachedDataset) {
+		// CSV is static during runtime, so parsing once keeps API responses fast.
 		return cachedDataset;
 	}
 
 	const rawCsv = fs.readFileSync(RAW_DATA_PATH, "utf8");
 	const lines = rawCsv.split(/\r?\n/).filter((line) => line.trim().length > 0);
 	const parsedRows = lines.map(splitCsvLine);
+	// Wide format: one row per company, remaining columns are sequential prices.
 	const maxSeriesLength = parsedRows.reduce(
 		(maxLength, row) => Math.max(maxLength, Math.max(0, row.length - 1)),
 		0
@@ -177,6 +181,7 @@ function loadMarketDataset() {
 			};
 		})
 		.filter(Boolean)
+		// Drops ultra-short rows that would be unusable on charts.
 		.filter((stock) => stock.series.length >= 50);
 
 	cachedDataset = {

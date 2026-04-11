@@ -5,6 +5,7 @@
 
 class PortfolioModel {
 	constructor({ cash = 0, holdings = {}, transactions = [], history = [] } = {}) {
+		// Small wrapper class keeps mutations explicit in service code.
 		this.cash = cash;
 		this.holdings = holdings;
 		this.transactions = transactions;

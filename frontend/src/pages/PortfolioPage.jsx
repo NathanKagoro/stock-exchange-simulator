@@ -56,6 +56,7 @@ export function PortfolioPage({
 									</tr>
 								</thead>
 								<tbody>
+									{/* Values are computed server-side from replay-day prices. */}
 									{portfolio.holdings.map((holding) => (
 										<tr key={holding.ticker}>
 											<td>

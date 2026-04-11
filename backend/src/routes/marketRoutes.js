@@ -7,6 +7,7 @@ const marketController = require("../controllers/marketController");
 
 const router = express.Router();
 
+// Replay controls are nested under /market to keep frontend API calls grouped.
 router.get("/state", marketController.getMarketState);
 router.get("/tickers", marketController.getTickers);
 router.get("/prices", marketController.getPrices);

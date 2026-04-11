@@ -8,6 +8,7 @@ const portfolioController = require("../controllers/portfolioController");
 
 const router = express.Router();
 
+// Trade actions are separated from snapshot reads for simpler client calls.
 router.get("/", portfolioController.getPortfolio);
 router.post("/buy", portfolioController.buyStock);
 router.post("/sell", portfolioController.sellStock);

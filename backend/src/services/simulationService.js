@@ -10,6 +10,7 @@ const simulationState = {
 };
 
 function clampIndex(index) {
+	// Guards against invalid jumps and keeps replay in known bounds.
 	return Math.max(0, Math.min(index, marketDataset.dates.length - 1));
 }
 
@@ -57,6 +58,7 @@ function getSeriesForTicker(ticker) {
 		name: stock.name,
 		currentIndex: simulationState.currentIndex,
 		series: stock.series,
+		// Used when the UI wants chart data only up to "current replay time".
 		visibleSeries: stock.series.slice(0, simulationState.currentIndex + 1),
 	};
 }

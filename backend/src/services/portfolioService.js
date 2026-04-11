@@ -12,6 +12,7 @@ const INITIAL_CASH = 100000;
 let portfolio = createInitialPortfolio();
 
 function createInitialPortfolio() {
+	// Seeds a repeatable starting portfolio so every reset starts from the same baseline.
 	const starterStocks = dataService.getAllStocks().slice(0, 3);
 	const holdings = {};
 	const transactions = [];
@@ -65,6 +66,7 @@ function recordSnapshotFor(targetPortfolio, reason) {
 	const totalValue = getPortfolioValue(targetPortfolio);
 	const lastEntry = targetPortfolio.history[targetPortfolio.history.length - 1];
 
+	// Avoid duplicate snapshots from repeated refreshes in the same replay step.
 	if (lastEntry && lastEntry.index === simulation.currentIndex && lastEntry.reason === reason) {
 		return;
 	}
@@ -103,6 +105,7 @@ function trade(side, ticker, quantity) {
 	const existingHolding = portfolio.getHolding(ticker);
 
 	if (side === "buy") {
+		// Recompute blended average entry whenever a position is topped up.
 		if (portfolio.cash < tradeValue) {
 			throw new Error("Insufficient cash to execute this trade.");
 		}

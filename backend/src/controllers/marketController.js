@@ -5,6 +5,7 @@ const simulationService = require("../services/simulationService");
 const portfolioService = require("../services/portfolioService");
 
 function getStatePayload() {
+	// Frontend syncs from this combined payload after most simulation actions.
 	return {
 		simulation: simulationService.getSimulationState(),
 		market: simulationService.getMarketSummary(),
@@ -34,6 +35,7 @@ function getPrices(request, response) {
 function advanceSimulation(request, response) {
 	const steps = Number.parseInt(request.body?.steps ?? 1, 10);
 	simulationService.advanceSimulation(Number.isFinite(steps) ? steps : 1);
+	// Persist a value point each time replay advances so the portfolio chart stays continuous.
 	portfolioService.recordSnapshot("advance");
 	response.json(getStatePayload());
 }

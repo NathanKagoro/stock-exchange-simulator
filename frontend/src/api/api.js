@@ -4,6 +4,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 async function request(path, options = {}) {
+	// Centralized fetch wrapper keeps error handling consistent across all screens.
 	const response = await fetch(`${API_BASE_URL}${path}`, {
 		headers: {
 			"Content-Type": "application/json",
@@ -13,6 +14,7 @@ async function request(path, options = {}) {
 	});
 
 	if (!response.ok) {
+		// Try to surface backend message first; fall back to generic text.
 		const errorPayload = await response.json().catch(() => ({ message: "Request failed." }));
 		throw new Error(errorPayload.message || "Request failed.");
 	}

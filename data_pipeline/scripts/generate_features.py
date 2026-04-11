@@ -19,6 +19,7 @@ def main() -> None:
 	dataframe = pd.read_csv(INPUT_PATH, parse_dates=["date"])
 	dataframe = dataframe.sort_values(["ticker", "date"]).copy()
 
+	# Feature engineering is done per ticker to avoid leakage across symbols.
 	grouped = dataframe.groupby("ticker", group_keys=False)
 	dataframe["return_1d"] = grouped["close"].pct_change()
 	dataframe["return_5d"] = grouped["close"].pct_change(periods=5)
@@ -30,6 +31,7 @@ def main() -> None:
 	dataframe["momentum_5d"] = dataframe["close"] - dataframe["sma_5"]
 	dataframe["next_return"] = grouped["return_1d"].shift(-1)
 
+	# Drops warm-up rows where rolling windows are not fully available.
 	dataframe = dataframe.dropna(subset=["return_1d", "return_5d", "volatility_10d", "next_return"])
 	OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 	dataframe.to_csv(OUTPUT_PATH, index=False)

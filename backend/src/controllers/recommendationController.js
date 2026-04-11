@@ -10,6 +10,7 @@ function buildRecommendation(stock) {
 	const last = closes[closes.length - 1] ?? currentPrice;
 	const momentum = first === 0 ? 0 : ((last - first) / first) * 100;
 	const avg = closes.reduce((total, close) => total + close, 0) / Math.max(1, closes.length);
+	// Lightweight heuristic model: momentum thresholding plus mean-distance context.
 	const action = momentum >= 4 ? "buy" : momentum <= -4 ? "sell" : "hold";
 	const reason =
 		action === "buy"
@@ -35,6 +36,7 @@ function buildRecommendation(stock) {
 function getRecommendations(_request, response) {
 	const recommendations = simulationService
 		.getMarketSummary()
+		// Keep payload compact for the side panel UI.
 		.slice(0, 8)
 		.map(buildRecommendation)
 		.sort((left, right) => right.confidence - left.confidence);

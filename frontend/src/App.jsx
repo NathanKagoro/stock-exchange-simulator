@@ -30,6 +30,7 @@ export default function App() {
 	} = useAppStore();
 
 	useEffect(() => {
+		// Hide static fallback only after React has mounted successfully.
 		document.body.setAttribute("data-app-mounted", "true");
 		const fallbackElement = document.getElementById("boot-fallback");
 		if (fallbackElement) {
@@ -49,6 +50,7 @@ export default function App() {
 	}, [initialize]);
 
 	useEffect(() => {
+		// Starts simulation polling loop only while replay is actively playing.
 		if (!simulation.isPlaying || simulation.isAtEnd) {
 			return undefined;
 		}

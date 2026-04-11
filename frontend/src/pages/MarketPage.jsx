@@ -18,6 +18,7 @@ export function MarketPage({
 	return (
 		<div className="page-shell">
 			<section className="stock-grid">
+				{/* Long rail keeps discovery broad while preserving compact card size. */}
 				{marketStocks.slice(0, 24).map((stock) => (
 					<StockCard
 						key={stock.ticker}

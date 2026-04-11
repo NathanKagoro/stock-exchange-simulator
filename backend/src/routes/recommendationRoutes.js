@@ -6,6 +6,7 @@ const recommendationController = require("../controllers/recommendationControlle
 
 const router = express.Router();
 
+// Single endpoint for recommendation panel polling.
 router.get("/", recommendationController.getRecommendations);
 
 module.exports = router;

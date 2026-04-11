@@ -18,6 +18,7 @@ IGNORED_TOKENS = {"PLC", "GROUP", "HOLDINGS", "HOLDING", "LTD", "LIMITED", "ORD"
 
 
 def build_trading_dates(length: int) -> list[str]:
+	# Reconstructs a synthetic trading calendar because source rows have no explicit date headers.
 	dates: list[str] = []
 	current = START_DATE
 
@@ -62,6 +63,7 @@ def normalize_series(raw_values: list[str]) -> list[float] | None:
 		except ValueError:
 			parsed_values.append(None)
 
+	# First valid point anchors forward-fill of sparse cells.
 	first_valid = next((value for value in parsed_values if value is not None), None)
 	if first_valid is None:
 		return None
@@ -86,6 +88,7 @@ def main() -> None:
 		reader = csv.reader(handle)
 		parsed_rows = [row for row in reader if row]
 
+	# Wide input may have uneven row lengths, so we normalize to the longest series.
 	max_series_length = max(max(0, len(row) - 1) for row in parsed_rows)
 	trading_dates = build_trading_dates(max_series_length)
 

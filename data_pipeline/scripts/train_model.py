@@ -27,6 +27,7 @@ FEATURE_COLUMNS = [
 
 def main() -> None:
 	dataframe = pd.read_csv(FEATURES_PATH)
+	# Conservative tree depth keeps the baseline model stable on noisy market data.
 	model = RandomForestRegressor(
 		n_estimators=200,
 		max_depth=8,
@@ -40,6 +41,7 @@ def main() -> None:
 	model.fit(X_train, y_train)
 
 	MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+	# Save features with the model so prediction code can stay schema-safe.
 	joblib.dump({"model": model, "features": FEATURE_COLUMNS}, MODEL_PATH)
 	print(f"Saved trained model to {MODEL_PATH}")
 

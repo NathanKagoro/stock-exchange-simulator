@@ -28,6 +28,7 @@ export function MainChart({ series, selectedStock, currentIndex }) {
 			</div>
 			<div className="chart-area">
 				<ResponsiveContainer width="100%" height="100%">
+					{/* Reference line marks the current replay day on full historical series. */}
 					<LineChart data={series} margin={{ top: 12, right: 16, bottom: 4, left: 0 }}>
 						<CartesianGrid stroke="rgba(179, 136, 255, 0.08)" vertical={false} />
 						<XAxis dataKey="date" tick={{ fill: "#d8d8e2", fontSize: 12 }} minTickGap={48} />

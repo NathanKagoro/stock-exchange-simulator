@@ -9,7 +9,7 @@ Historical London Stock Exchange replay app built as a full-stack simulation MVP
 - `data_pipeline/`: Python scripts for cleaning, feature generation, model training, and a FastAPI ML stub.
 - `shared/`: Shared constants and configuration values.
 
-## MVP Features
+## Features
 
 - Historical daily market replay with generated trading dates.
 - Portfolio landing page with equity curve, holdings table, and trade controls.
@@ -18,7 +18,7 @@ Historical London Stock Exchange replay app built as a full-stack simulation MVP
 - Rule-based recommendation feed.
 - Reset, step, jump, and auto-play controls with speed options.
 
-## Run The App
+## How to run The App
 
 1. Install workspace dependencies from the project root.
 2. Start the backend and frontend together.

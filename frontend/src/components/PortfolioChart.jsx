@@ -22,6 +22,7 @@ export function PortfolioChart({ history }) {
 			</div>
 			<div className="chart-area">
 				<ResponsiveContainer width="100%" height="100%">
+					{/* Area chart emphasizes cumulative effect of trade decisions over time. */}
 					<AreaChart data={history} margin={{ top: 12, right: 12, bottom: 4, left: 0 }}>
 						<defs>
 							<linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">

@@ -11,6 +11,7 @@ export function RecommendationPanel({ recommendations, onSelect }) {
 				</div>
 			</div>
 			<div className="recommendation-list">
+				{/* Kept intentionally short so the side panel remains compact. */}
 				{recommendations.map((recommendation) => (
 					<button
 						key={`${recommendation.ticker}-${recommendation.action}`}
