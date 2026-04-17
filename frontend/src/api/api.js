@@ -1,10 +1,8 @@
 // Handles all communication with the backend API
-// Example: fetching stock prices, executing trades, getting recommendations
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 async function request(path, options = {}) {
-	// Centralized fetch wrapper keeps error handling consistent across all screens.
 	const response = await fetch(`${API_BASE_URL}${path}`, {
 		headers: {
 			"Content-Type": "application/json",
@@ -13,8 +11,8 @@ async function request(path, options = {}) {
 		...options,
 	});
 
-	if (!response.ok) {
-		// Try to surface backend message first; fall back to generic text.
+	if (response.ok != true) {
+		// Try to use backend message first; if not available, use generic message.
 		const errorPayload = await response.json().catch(() => ({ message: "Request failed." }));
 		throw new Error(errorPayload.message || "Request failed.");
 	}

@@ -6,7 +6,7 @@ const path = require("path");
 
 const RAW_DATA_PATH = path.join(
 	__dirname,
-	"../../../data_pipeline/data/raw/historical_stock_prices_2015_2025.csv"
+	"../data/historical_stock_prices_2015_2025.csv"
 );
 const START_DATE = new Date("2015-01-02T00:00:00Z");
 const IGNORED_TOKENS = new Set([
@@ -64,7 +64,7 @@ function buildTicker(name, index, usedTickers) {
 		.filter(Boolean)
 		.filter((token) => !IGNORED_TOKENS.has(token));
 
-	// Builds deterministic pseudo-tickers from company names in the wide CSV.
+	// Builds pseudo-tickers from company names. Makes sure the names are always generated the same way.
 	let baseTicker = cleanedTokens
 		.slice(0, 4)
 		.map((token, tokenIndex) => (tokenIndex === 0 ? token.slice(0, 3) : token[0]))
@@ -87,6 +87,7 @@ function buildTicker(name, index, usedTickers) {
 	return ticker;
 }
 
+// Generates a sequential list of trading-day dates (Mon-Fri only) from START_DATE.
 function buildTradingDates(length) {
 	const dates = [];
 	const current = new Date(START_DATE);
@@ -102,6 +103,7 @@ function buildTradingDates(length) {
 	return dates;
 }
 
+// Forward-fills missing values with the latest known price; leading gaps are filled with the first valid price.
 function normalizeSeries(values) {
 	const firstValid = values.find((value) => value !== null);
 
@@ -110,7 +112,6 @@ function normalizeSeries(values) {
 	}
 
 	const normalized = [];
-	// Forward-fill sparse cells so the replay always has a usable close value.
 	let lastKnown = firstValid;
 
 	for (const value of values) {
@@ -153,6 +154,7 @@ function loadMarketDataset() {
 				return null;
 			}
 
+			// Extract price values for each day, padding to maxSeriesLength and marking missing/invalid values as null.
 			const rawSeries = Array.from({ length: maxSeriesLength }, (_, dayIndex) => {
 				const rawValue = row[dayIndex + 1];
 				if (rawValue === undefined || rawValue === null || rawValue.trim() === "") {

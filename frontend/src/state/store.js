@@ -1,4 +1,4 @@
-// Global state management (Zustand or Redux)
+// Global state management with Zustand
 // Stores:
 // - current simulation time
 // - selected stock
