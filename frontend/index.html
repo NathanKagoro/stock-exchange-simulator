@@ -1,95 +1,64 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Stock Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>LSE Replay — trade 2015–2025 with hindsight</title>
+    <meta
+      name="description"
+      content="Replay ten years of London Stock Exchange daily prices (2015–2025) with £100,000 of virtual cash. Buy, sell and track your P&amp;L day by day — all in your browser."
+    />
+    <meta name="theme-color" content="#0b0b0f" />
+    <meta name="author" content="Nathan Kagoro" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="apple-touch-icon" href="%BASE_URL%og-image.png" />
+    <link rel="canonical" href="https://nathankagoro.com/stock/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Nathan Kagoro" />
+    <meta property="og:title" content="LSE Replay — trade 2015–2025 with hindsight" />
+    <meta
+      property="og:description"
+      content="Replay ten years of London Stock Exchange prices with £100,000 of virtual cash. Buy, sell and track your P&amp;L day by day."
+    />
+    <meta property="og:url" content="https://nathankagoro.com/stock/" />
+    <meta property="og:image" content="https://nathankagoro.com/stock/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preload" href="%BASE_URL%data/meta.json" as="fetch" crossorigin="anonymous" />
     <style>
       body {
         margin: 0;
         background: #0b0b0f;
         color: #ffffff;
-        font-family: "Segoe UI", sans-serif;
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
       }
-
       #boot-fallback {
         max-width: 1440px;
         margin: 0 auto;
-        padding: 32px 20px 56px;
+        padding: 24px 20px;
       }
-
-      #boot-fallback .boot-grid {
-        display: grid;
-        gap: 16px;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
-
-      #boot-fallback .boot-card,
-      #boot-fallback .boot-hero {
-        border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: linear-gradient(180deg, rgba(42, 42, 53, 0.86), rgba(22, 22, 29, 0.78));
-        padding: 20px;
-      }
-
-      #boot-fallback .boot-hero {
-        margin-bottom: 24px;
-      }
-
-      #boot-fallback .boot-kicker {
+      #boot-fallback p {
+        margin: 0 0 6px;
         color: #b388ff;
         text-transform: uppercase;
-        letter-spacing: 0.18em;
-        font-size: 0.72rem;
-        margin: 0 0 8px;
+        letter-spacing: 0.16em;
+        font-size: 0.7rem;
+        font-weight: 600;
       }
-
-      #boot-fallback h1,
-      #boot-fallback h2,
-      #boot-fallback p {
-        margin: 0;
-      }
-
       #boot-fallback h1 {
-        font-size: clamp(2rem, 4vw, 3.6rem);
-        max-width: 12ch;
-        line-height: 0.98;
-        margin-bottom: 14px;
-      }
-
-      #boot-fallback .boot-note {
-        color: #b9b9c9;
-        margin-top: 8px;
+        margin: 0;
+        font-size: clamp(1.45rem, 3.4vw, 2.8rem);
+        line-height: 1.02;
+        max-width: 18ch;
       }
     </style>
   </head>
   <body>
     <div id="boot-fallback">
-      <section class="boot-hero">
-        <p class="boot-kicker">London Stock Exchange Replay</p>
-        <h1>What if you traded 2015 with hindsight?</h1>
-        <p class="boot-note">
-          The app is loading the historical market replay, portfolio dashboard, charts, trading panel, and AI recommendations.
-        </p>
-      </section>
-      <section class="boot-grid">
-        <article class="boot-card">
-          <p class="boot-kicker">Portfolio</p>
-          <h2>Value, cash, and P&amp;L cards</h2>
-        </article>
-        <article class="boot-card">
-          <p class="boot-kicker">Replay</p>
-          <h2>Timeline slider, play, pause, reset</h2>
-        </article>
-        <article class="boot-card">
-          <p class="boot-kicker">Market</p>
-          <h2>Stock cards and main chart view</h2>
-        </article>
-        <article class="boot-card">
-          <p class="boot-kicker">Trading</p>
-          <h2>Holdings table, trade panel, recommendations</h2>
-        </article>
-      </section>
+      <p>London Stock Exchange replay</p>
+      <h1>What if you traded 2015–2025 with hindsight?</h1>
+      <noscript>This replay runs entirely in your browser and needs JavaScript.</noscript>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

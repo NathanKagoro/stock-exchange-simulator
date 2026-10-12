@@ -1,199 +1,219 @@
-// Global state management (Zustand or Redux)
-// Stores:
-// - current simulation time
-// - selected stock
-// - portfolio state (frontend copy)
+// Global app state (Zustand). Components subscribe to small slices via selectors,
+// e.g. `useAppStore((s) => s.day)`, and call the plain `actions` object for updates so
+// they never re-render because an unrelated field changed.
 
 import { create } from "zustand";
-import { api } from "../api/api";
+import { loadMarket } from "../engine/loader";
+import { createSeedLedger, executeTrade, validateTrade } from "../engine/portfolio";
+import { clearSaved, loadSaved, sanitizeTrades, save } from "../engine/persist";
+import { formatMoney } from "../engine/format";
 
-const defaultSimulation = {
-	currentIndex: 0,
-	currentDate: "",
-	totalDays: 0,
-	isAtEnd: false,
-	isPlaying: false,
-	speed: 1,
-};
+export const PACES = [
+	{ id: "day", label: "1 day", short: "1D", days: 1 },
+	{ id: "week", label: "1 week", short: "1W", days: 5 },
+	{ id: "month", label: "1 month", short: "1M", days: 21 },
+];
+export const TICK_MS = 200;
 
-export const useAppStore = create((set, get) => ({
-	loading: false,
+export const useAppStore = create(() => ({
+	status: "loading", // loading | ready | error
 	error: null,
+	market: null, // engine market; reference is stable once loaded
+	loadedDays: 0, // bumps as background chunks arrive
+	day: 0,
+	isPlaying: false,
+	pace: "day",
 	selectedTicker: "",
-	marketStocks: [],
-	marketSeries: [],
-	portfolio: {
-		cash: 0,
-		initialCash: 0,
-		totalValue: 0,
-		pnl: 0,
-		holdings: [],
-		transactions: [],
-		history: [],
-	},
-	recommendations: [],
-	simulation: defaultSimulation,
-	isAdvancing: false,
-	setError: (error) => set({ error }),
-	setPlayback: (isPlaying) =>
-		set((state) => ({
-			simulation: {
-				...state.simulation,
-				isPlaying,
-			},
-		})),
-	setSpeed: (speed) =>
-		set((state) => ({
-			simulation: {
-				...state.simulation,
-				speed,
-			},
-		})),
-	initialize: async () => {
-		set({ loading: true, error: null });
+	ledger: [], // seed entries + user trades, see engine/portfolio.js
+	watchlist: [],
+	toast: null, // { id, kind, message }
+}));
 
+const get = useAppStore.getState;
+const set = useAppStore.setState;
+
+function maxPlayableDay() {
+	const { market, loadedDays } = get();
+	if (!market) return 0;
+	return Math.max(0, Math.min(market.dayCount, loadedDays) - 1);
+}
+
+let toastTimer;
+function showToast(kind, message) {
+	window.clearTimeout(toastTimer);
+	const toast = { id: Date.now(), kind, message };
+	set({ toast });
+	toastTimer = window.setTimeout(() => {
+		if (get().toast?.id === toast.id) set({ toast: null });
+	}, 3500);
+}
+
+function persist() {
+	const { status, day, pace, selectedTicker, ledger, watchlist } = get();
+	if (status !== "ready") return;
+	save({
+		day,
+		pace,
+		selectedTicker,
+		watchlist,
+		trades: ledger.filter((entry) => entry.type !== "seed"),
+	});
+}
+
+// Debounced so playback doesn't write to storage on every tick.
+let persistTimer;
+useAppStore.subscribe((state, previous) => {
+	if (
+		state.day === previous.day &&
+		state.ledger === previous.ledger &&
+		state.watchlist === previous.watchlist &&
+		state.pace === previous.pace &&
+		state.selectedTicker === previous.selectedTicker
+	) {
+		return;
+	}
+	window.clearTimeout(persistTimer);
+	persistTimer = window.setTimeout(persist, state.isPlaying ? 1000 : 150);
+});
+if (typeof window !== "undefined") {
+	window.addEventListener("pagehide", persist);
+}
+
+export const actions = {
+	async init() {
+		if (get().market) return;
+		const saved = loadSaved();
 		try {
-			// Prime all dashboard sections in parallel for quicker first paint.
-			const [marketState, portfolio, recommendations] = await Promise.all([
-				api.fetchMarketState(),
-				api.fetchPortfolio(),
-				api.fetchRecommendations(),
-			]);
+			const { market, background } = await loadMarket({
+				untilDay: Number.isSafeInteger(saved?.day) ? saved.day : 0,
+				onProgress: (m) => set({ loadedDays: m.loadedDays }),
+			});
+			background.catch((error) => set({ error: `Some later years failed to load: ${error.message}` }));
 
-			const selectedTicker = marketState.market[0]?.ticker ?? "";
-			const pricePayload = selectedTicker ? await api.fetchStockPrices(selectedTicker) : { series: [] };
-
+			const trades = sanitizeTrades(saved?.trades, market);
+			const day = Math.min(Math.max(0, saved?.day ?? 0), market.loadedDays - 1);
+			const selectedTicker = market.indexByTicker.has(saved?.selectedTicker)
+				? saved.selectedTicker
+				: market.tickers[0];
 			set({
-				loading: false,
+				status: "ready",
+				market,
+				loadedDays: market.loadedDays,
+				day,
+				pace: PACES.some((p) => p.id === saved?.pace) ? saved.pace : "day",
 				selectedTicker,
-				marketStocks: marketState.market,
-				marketSeries: pricePayload.series ?? [],
-				portfolio,
-				recommendations,
-				simulation: {
-					...defaultSimulation,
-					...marketState.simulation,
-				},
+				ledger: [...createSeedLedger(market), ...trades],
+				watchlist: Array.isArray(saved?.watchlist)
+					? saved.watchlist.filter((t) => market.indexByTicker.has(t))
+					: [],
 			});
 		} catch (error) {
-			set({ loading: false, error: error.message });
+			set({ status: "error", error: error.message });
 		}
 	},
-	refreshDashboard: async (options = {}) => {
-		const { keepSelection = true, overrideTicker } = options;
-
+	play() {
+		if (get().day >= (get().market?.dayCount ?? 1) - 1) set({ day: 0 });
+		set({ isPlaying: true });
+	},
+	pause() {
+		set({ isPlaying: false });
+	},
+	togglePlay() {
+		if (get().isPlaying) actions.pause();
+		else actions.play();
+	},
+	setPace(pace) {
+		set({ pace });
+	},
+	/** Moves by `delta` days, clamped to loaded data. Returns false when it couldn't move. */
+	step(delta) {
+		const { day } = get();
+		const next = Math.max(0, Math.min(maxPlayableDay(), day + delta));
+		if (next === day) return false;
+		set({ day: next });
+		return true;
+	},
+	jump(index) {
+		const next = Math.max(0, Math.min(maxPlayableDay(), Math.round(index)));
+		if (next !== get().day) set({ day: next });
+	},
+	reset() {
+		const { market } = get();
+		if (!market) return;
+		set({ isPlaying: false, day: 0, ledger: createSeedLedger(market) });
+		showToast("info", "Replay reset — back to day one with £100,000.");
+	},
+	selectTicker(ticker) {
+		if (get().market?.indexByTicker.has(ticker)) set({ selectedTicker: ticker });
+	},
+	toggleWatch(ticker) {
+		const { watchlist } = get();
+		set({
+			watchlist: watchlist.includes(ticker) ? watchlist.filter((t) => t !== ticker) : [...watchlist, ticker],
+		});
+	},
+	validate(side, quantity) {
+		const { market, ledger, day, selectedTicker } = get();
+		if (!market) return { ok: false, reason: "Loading…", max: 0, total: 0 };
+		return validateTrade(market, ledger, { side, ticker: selectedTicker, quantity, day });
+	},
+	trade(side, quantity) {
+		const { market, ledger, day, selectedTicker } = get();
 		try {
-			const [marketState, portfolio, recommendations] = await Promise.all([
-				api.fetchMarketState(),
-				api.fetchPortfolio(),
-				api.fetchRecommendations(),
-			]);
-
-			const currentTicker = get().selectedTicker;
-			// Keeps user focus on the currently selected stock whenever possible.
-			const selectedTicker =
-				overrideTicker ??
-				(keepSelection && marketState.market.some((stock) => stock.ticker === currentTicker)
-					? currentTicker
-					: marketState.market[0]?.ticker ?? "");
-
-			const pricePayload = selectedTicker ? await api.fetchStockPrices(selectedTicker) : { series: [] };
-
-			set((state) => ({
-				selectedTicker,
-				marketStocks: marketState.market,
-				marketSeries: pricePayload.series ?? [],
-				portfolio,
-				recommendations,
-				simulation: {
-					...state.simulation,
-					...marketState.simulation,
-				},
-			}));
+			const result = executeTrade(market, ledger, { side, ticker: selectedTicker, quantity, day });
+			set({ ledger: result.ledger });
+			const verb = side === "buy" ? "Bought" : "Sold";
+			const extra = result.discarded
+				? ` (${result.discarded} later trade${result.discarded === 1 ? "" : "s"} from the rewound future removed)`
+				: "";
+			showToast(
+				"success",
+				`${verb} ${result.entry.quantity.toLocaleString("en-GB")} ${selectedTicker} for ${formatMoney(result.entry.total)}${extra}`
+			);
+			return true;
 		} catch (error) {
-			set({ error: error.message, loading: false });
+			showToast("error", error.message);
+			return false;
 		}
 	},
-	selectTicker: async (ticker) => {
-		try {
-			const pricePayload = await api.fetchStockPrices(ticker);
-			set({ selectedTicker: ticker, marketSeries: pricePayload.series ?? [], error: null });
-		} catch (error) {
-			set({ error: error.message });
-		}
+	dismissToast() {
+		set({ toast: null });
 	},
-	advanceSimulation: async (steps = 1) => {
-		if (get().isAdvancing) {
-			return;
-		}
+	clearSavedData() {
+		clearSaved();
+	},
+};
 
-		set({ isAdvancing: true });
-
-		try {
-			const previousTicker = get().selectedTicker;
-			const marketState = await api.advanceSimulation(steps);
-			const market = marketState?.market ?? [];
-			const portfolio = marketState?.portfolio;
-			const recommendations = marketState?.recommendations;
-			const nextTicker = market.some((stock) => stock.ticker === previousTicker)
-				? previousTicker
-				: market[0]?.ticker ?? "";
-
-			set((state) => ({
-				error: null,
-				selectedTicker: nextTicker,
-				marketStocks: market,
-				portfolio: portfolio ?? state.portfolio,
-				recommendations: recommendations ?? state.recommendations,
-				simulation: {
-					...state.simulation,
-					...(marketState?.simulation ?? {}),
-				},
-			}));
-
-			if (nextTicker && nextTicker !== previousTicker) {
-				const pricePayload = await api.fetchStockPrices(nextTicker);
-				set({ marketSeries: pricePayload.series ?? [] });
+/** Fixed-rate playback driven by requestAnimationFrame (no timers piling up). */
+export function startPlaybackLoop() {
+	let frame = 0;
+	let last = 0;
+	let carry = 0;
+	const loop = (now) => {
+		const { isPlaying, pace, market, day } = get();
+		if (isPlaying && market) {
+			if (!last) last = now;
+			carry += now - last;
+			last = now;
+			// Cap catch-up after a background tab so we don't leap months at once.
+			carry = Math.min(carry, TICK_MS * 3);
+			while (carry >= TICK_MS) {
+				carry -= TICK_MS;
+				const days = PACES.find((p) => p.id === pace)?.days ?? 1;
+				const moved = actions.step(days);
+				if (!moved) {
+					// Either the end of the data, or waiting for the next year to stream in.
+					if (day >= market.dayCount - 1) set({ isPlaying: false });
+					carry = 0;
+					break;
+				}
 			}
-		} catch (error) {
-			set({ error: error.message });
-		} finally {
-			set({ isAdvancing: false });
+		} else {
+			last = 0;
+			carry = 0;
 		}
-	},
-	jumpToIndex: async (index) => {
-		try {
-			await api.jumpSimulation(index);
-			await get().refreshDashboard();
-		} catch (error) {
-			set({ error: error.message });
-		}
-	},
-	resetSimulation: async () => {
-		try {
-			await api.resetSimulation();
-			set((state) => ({
-				simulation: {
-					...state.simulation,
-					isPlaying: false,
-				},
-			}));
-			await get().refreshDashboard({ keepSelection: false });
-		} catch (error) {
-			set({ error: error.message });
-		}
-	},
-	executeTrade: async (side, payload) => {
-		try {
-			if (side === "buy") {
-				await api.buyStock(payload);
-			} else {
-				await api.sellStock(payload);
-			}
-
-			await get().refreshDashboard();
-		} catch (error) {
-			set({ error: error.message });
-		}
-	},
-}));
+		frame = requestAnimationFrame(loop);
+	};
+	frame = requestAnimationFrame(loop);
+	return () => cancelAnimationFrame(frame);
+}

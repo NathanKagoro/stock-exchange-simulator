@@ -1,34 +1,58 @@
-// Displays AI-generated buy/sell recommendations
-// Fetches predictions from backend ML service
+// Momentum signals across the whole market: the strongest 7-trading-day risers and
+// fallers as of the current replay day. A toy rule, clearly labelled as such.
 
-export function RecommendationPanel({ recommendations, onSelect }) {
+import { formatPercent, formatPrice } from "../engine/format";
+import { MOMENTUM_THRESHOLD } from "../engine/signals";
+import { useSignals } from "../state/hooks";
+import { actions } from "../state/store";
+import { Delta } from "./ui";
+
+function SignalList({ title, items, empty }) {
 	return (
-		<section className="glass-card recommendations-panel">
+		<div className="signal-group">
+			<h3>{title}</h3>
+			{items.length === 0 ? (
+				<p className="empty-state empty-state--inline">{empty}</p>
+			) : (
+				<ul className="signal-list">
+					{items.map((item) => (
+						<li key={item.ticker}>
+							<button type="button" className="signal-item" onClick={() => actions.selectTicker(item.ticker)}>
+								<span className="signal-item__id">
+									<strong>{item.ticker}</strong>
+									<span>{item.name}</span>
+								</span>
+								<span className="signal-item__nums num">
+									<Delta value={item.change}>{formatPercent(Math.abs(item.change), { showPlus: false })}</Delta>
+									<span className="muted">{formatPrice(item.priceUnits)}</span>
+								</span>
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
+		</div>
+	);
+}
+
+export function RecommendationPanel() {
+	const signals = useSignals(5);
+	if (!signals) return null;
+	return (
+		<section className="glass-card signals-panel" aria-label="Momentum signals">
 			<div className="panel-header">
 				<div>
-					<p className="eyebrow">AI Guidance</p>
-					<h2>Recommendations</h2>
+					<p className="eyebrow">Momentum signals</p>
+					<h2>{signals.lookback}-day movers</h2>
 				</div>
 			</div>
-			<div className="recommendation-list">
-				{/* Kept intentionally short so the side panel remains compact. */}
-				{recommendations.map((recommendation) => (
-					<button
-						key={`${recommendation.ticker}-${recommendation.action}`}
-						type="button"
-						className="recommendation-item"
-						onClick={() => onSelect(recommendation.ticker)}
-					>
-						<div>
-							<strong>
-								{recommendation.action.toUpperCase()} {recommendation.ticker}
-							</strong>
-							<p>{recommendation.reason}</p>
-						</div>
-						<span className="pill pill--neutral">{recommendation.confidence}%</span>
-					</button>
-				))}
-			</div>
+			<p className="panel-note">
+				Stocks moving more than {MOMENTUM_THRESHOLD}% over the last {signals.lookback} trading days, out of{" "}
+				<span className="num">{signals.scanned.toLocaleString("en-GB")}</span> scanned. Past momentum is not a
+				prediction.
+			</p>
+			<SignalList title="Rising" items={signals.rising} empty="Nothing up more than the threshold yet." />
+			<SignalList title="Falling" items={signals.falling} empty="Nothing down more than the threshold yet." />
 		</section>
 	);
 }

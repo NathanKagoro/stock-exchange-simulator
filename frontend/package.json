@@ -1,15 +1,18 @@
 {
   "name": "stock-simulator-frontend",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "start": "vite --host 0.0.0.0 --port 5173",
+    "data": "node ../scripts/build-data.mjs",
+    "predev": "npm run data",
     "dev": "vite --host 0.0.0.0 --port 5173",
+    "prebuild": "npm run data",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --port 4173"
   },
   "dependencies": {
+    "fflate": "^0.8.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.1",

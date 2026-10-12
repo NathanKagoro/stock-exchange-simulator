@@ -1,39 +1,17 @@
-// Market overview page
-// Displays multiple StockCards and main chart
-// Allows user to explore stocks and navigate to trading
+// Market explorer: searchable list of every stock beside the selected stock's chart.
 
 import { MainChart } from "../components/MainChart";
-import { StockCard } from "../components/StockCard";
+import { RecommendationPanel } from "../components/RecommendationPanel";
+import { StockList } from "../components/StockList";
 
-export function MarketPage({
-	marketStocks,
-	marketSeries,
-	selectedTicker,
-	simulation,
-	onSelectTicker,
-	onTradeTicker,
-}) {
-	const selectedStock = marketStocks.find((stock) => stock.ticker === selectedTicker) ?? null;
-
+export function MarketPage({ onTrade }) {
 	return (
-		<div className="page-shell">
-			<section className="stock-grid">
-				{/* Long rail keeps discovery broad while preserving compact card size. */}
-				{marketStocks.slice(0, 24).map((stock) => (
-					<StockCard
-						key={stock.ticker}
-						stock={stock}
-						active={stock.ticker === selectedTicker}
-						onSelect={onSelectTicker}
-						onTrade={onTradeTicker}
-					/>
-				))}
-			</section>
-			<MainChart
-				series={marketSeries}
-				selectedStock={selectedStock}
-				currentIndex={simulation.currentIndex}
-			/>
+		<div className="market-layout">
+			<StockList onTrade={onTrade} />
+			<div className="market-layout__main">
+				<MainChart onTrade={onTrade} />
+				<RecommendationPanel />
+			</div>
 		</div>
 	);
 }
