@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main, ui-ux-improvements]
+  pull_request:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Bundle report
+        run: |
+          du -sh frontend/dist
+          find frontend/dist -type f -printf '%s\t%p\n' | sort -rn | head -15
+          test ! -e frontend/dist/data/*.csv
+      - name: Screenshots (phone + desktop)
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+          node scripts/serve-dist.mjs 4173 &
+          sleep 1
+          node scripts/screenshots.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots/
+          if-no-files-found: ignore
