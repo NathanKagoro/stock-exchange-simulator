@@ -22,25 +22,17 @@ const IGNORED_TOKENS = new Set([
 let cachedDataset = null;
 
 function resolveRawDataPath() {
+	// When bundled into a Netlify function, __dirname no longer points at src/services,
+	// so also look where Netlify places included_files (relative to the site root).
+	const dataSubpath = ["backend", "src", "data", RAW_DATA_RELATIVE_PATH];
+	const projectFolders = [
+		["projects", "stock-exchange"], // git submodule inside cmd-website
+		["projects", "Stock Exchange"], // older copy-based layout
+	];
 	const candidates = [
 		path.resolve(__dirname, "../data", RAW_DATA_RELATIVE_PATH),
-		path.resolve(
-			process.cwd(),
-			"projects",
-			"Stock Exchange",
-			"backend",
-			"src",
-			"data",
-			RAW_DATA_RELATIVE_PATH
-		),
-		path.resolve(
-			"/var/task",
-			"projects",
-			"Stock Exchange",
-			"backend",
-			"src",
-			"data",
-			RAW_DATA_RELATIVE_PATH
+		...[process.cwd(), "/var/task"].flatMap((root) =>
+			projectFolders.map((folder) => path.resolve(root, ...folder, ...dataSubpath))
 		),
 	];
 
