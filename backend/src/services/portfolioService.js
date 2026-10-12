@@ -8,10 +8,24 @@ const dataService = require("./dataService");
 const simulationService = require("./simulationService");
 
 const INITIAL_CASH = 100000;
+const DEFAULT_SESSION_ID = "default";
+const portfoliosBySession = new Map();
 
-let portfolio = createInitialPortfolio();
+function getSessionId(sessionId) {
+	return sessionId || DEFAULT_SESSION_ID;
+}
 
-function createInitialPortfolio() {
+function getPortfolioForSession(sessionId) {
+	const safeSessionId = getSessionId(sessionId);
+
+	if (!portfoliosBySession.has(safeSessionId)) {
+		portfoliosBySession.set(safeSessionId, createInitialPortfolio(safeSessionId));
+	}
+
+	return portfoliosBySession.get(safeSessionId);
+}
+
+function createInitialPortfolio(sessionId) {
 	// Seeds a repeatable starting portfolio so every reset starts from the same baseline.
 	const starterStocks = dataService.getAllStocks().slice(0, 3);
 	const holdings = {};
@@ -48,22 +62,22 @@ function createInitialPortfolio() {
 		history: [],
 	});
 
-	recordSnapshotFor(nextPortfolio, "seed");
+	recordSnapshotFor(nextPortfolio, "seed", sessionId);
 	return nextPortfolio;
 }
 
-function getPortfolioValue(targetPortfolio = portfolio) {
+function getPortfolioValue(targetPortfolio, sessionId) {
 	const holdingsValue = Object.values(targetPortfolio.holdings).reduce((total, holding) => {
-		const currentPrice = simulationService.getCurrentPrice(holding.ticker) ?? 0;
+		const currentPrice = simulationService.getCurrentPrice(sessionId, holding.ticker) ?? 0;
 		return total + holding.shares * currentPrice;
 	}, 0);
 
 	return Number((targetPortfolio.cash + holdingsValue).toFixed(2));
 }
 
-function recordSnapshotFor(targetPortfolio, reason) {
-	const simulation = simulationService.getSimulationState();
-	const totalValue = getPortfolioValue(targetPortfolio);
+function recordSnapshotFor(targetPortfolio, reason, sessionId) {
+	const simulation = simulationService.getSimulationState(sessionId);
+	const totalValue = getPortfolioValue(targetPortfolio, sessionId);
 	const lastEntry = targetPortfolio.history[targetPortfolio.history.length - 1];
 
 	// Avoid duplicate snapshots from repeated refreshes in the same replay step.
@@ -80,16 +94,20 @@ function recordSnapshotFor(targetPortfolio, reason) {
 	});
 }
 
-function recordSnapshot(reason = "update") {
-	recordSnapshotFor(portfolio, reason);
+function recordSnapshot(sessionId, reason = "update") {
+	const portfolio = getPortfolioForSession(sessionId);
+	recordSnapshotFor(portfolio, reason, sessionId);
 }
 
-function resetPortfolio() {
-	portfolio = createInitialPortfolio();
-	return getPortfolioState();
+function resetPortfolio(sessionId) {
+	const safeSessionId = getSessionId(sessionId);
+	const nextPortfolio = createInitialPortfolio(safeSessionId);
+	portfoliosBySession.set(safeSessionId, nextPortfolio);
+	return getPortfolioState(safeSessionId);
 }
 
-function trade(side, ticker, quantity) {
+function trade(sessionId, side, ticker, quantity) {
+	const portfolio = getPortfolioForSession(sessionId);
 	const numericQuantity = Number.parseInt(quantity, 10);
 	if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
 		throw new Error("Quantity must be a positive integer.");
@@ -100,7 +118,7 @@ function trade(side, ticker, quantity) {
 		throw new Error("Unknown ticker.");
 	}
 
-	const currentPrice = simulationService.getCurrentPrice(ticker);
+	const currentPrice = simulationService.getCurrentPrice(sessionId, ticker);
 	const tradeValue = Number((currentPrice * numericQuantity).toFixed(2));
 	const existingHolding = portfolio.getHolding(ticker);
 
@@ -147,16 +165,17 @@ function trade(side, ticker, quantity) {
 		quantity: numericQuantity,
 		price: currentPrice,
 		total: tradeValue,
-		date: simulationService.getSimulationState().currentDate,
+		date: simulationService.getSimulationState(sessionId).currentDate,
 	});
 
-	recordSnapshot(side);
-	return getPortfolioState();
+	recordSnapshot(sessionId, side);
+	return getPortfolioState(sessionId);
 }
 
-function getPortfolioState() {
+function getPortfolioState(sessionId) {
+	const portfolio = getPortfolioForSession(sessionId);
 	const holdings = Object.values(portfolio.holdings).map((holding) => {
-		const currentPrice = simulationService.getCurrentPrice(holding.ticker) ?? 0;
+		const currentPrice = simulationService.getCurrentPrice(sessionId, holding.ticker) ?? 0;
 		const marketValue = Number((currentPrice * holding.shares).toFixed(2));
 		const costBasis = Number((holding.averagePrice * holding.shares).toFixed(2));
 		const pnl = Number((marketValue - costBasis).toFixed(2));
@@ -169,7 +188,7 @@ function getPortfolioState() {
 		};
 	});
 
-	const totalValue = getPortfolioValue();
+	const totalValue = getPortfolioValue(portfolio, sessionId);
 	const pnl = Number((totalValue - INITIAL_CASH).toFixed(2));
 
 	return {
@@ -184,9 +203,9 @@ function getPortfolioState() {
 }
 
 module.exports = {
-	buyStock: (ticker, quantity) => trade("buy", ticker, quantity),
+	buyStock: (sessionId, ticker, quantity) => trade(sessionId, "buy", ticker, quantity),
 	getPortfolioState,
 	recordSnapshot,
 	resetPortfolio,
-	sellStock: (ticker, quantity) => trade("sell", ticker, quantity),
+	sellStock: (sessionId, ticker, quantity) => trade(sessionId, "sell", ticker, quantity),
 };

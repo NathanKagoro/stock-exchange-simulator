@@ -43,7 +43,7 @@ const rootElement = document.getElementById("root");
 ReactDOM.createRoot(rootElement).render(
 	<React.StrictMode>
 		<RootErrorBoundary>
-			<BrowserRouter>
+			<BrowserRouter basename={import.meta.env.BASE_URL}>
 				<App />
 			</BrowserRouter>
 		</RootErrorBoundary>

@@ -223,6 +223,25 @@ body[data-app-mounted="true"] #boot-fallback {
    color: var(--muted);
 }
 
+.error-banner {
+   margin-bottom: 24px;
+   padding: 18px 20px;
+   border-color: rgba(255, 123, 157, 0.28);
+   background: linear-gradient(180deg, rgba(68, 30, 44, 0.92), rgba(43, 22, 30, 0.88));
+}
+
+.error-banner p {
+   margin-top: 0;
+}
+
+.error-banner pre {
+   margin: 0;
+   white-space: pre-wrap;
+   word-break: break-word;
+   font: 0.94rem/1.5 "Consolas", "SFMono-Regular", monospace;
+   color: #ffd7e2;
+}
+
 .primary-button,
 .secondary-button,
 .speed-chip,

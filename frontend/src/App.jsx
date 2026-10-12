@@ -55,12 +55,31 @@ export default function App() {
 			return undefined;
 		}
 
-		const intervalMs = Math.max(300, 1500 / simulation.speed);
-		const timer = window.setInterval(() => {
-			advanceSimulation(1);
-		}, intervalMs);
+		const intervalMs = Math.max(180, Math.floor(900 / simulation.speed));
+		const stepsPerTick = Math.max(1, Math.floor(simulation.speed));
+		let cancelled = false;
+		let timerId;
 
-		return () => window.clearInterval(timer);
+		const tick = async () => {
+			if (cancelled) {
+				return;
+			}
+
+			await advanceSimulation(stepsPerTick);
+
+			if (!cancelled) {
+				timerId = window.setTimeout(tick, intervalMs);
+			}
+		};
+
+		timerId = window.setTimeout(tick, intervalMs);
+
+		return () => {
+			cancelled = true;
+			if (timerId) {
+				window.clearTimeout(timerId);
+			}
+		};
 	}, [advanceSimulation, simulation.isAtEnd, simulation.isPlaying, simulation.speed]);
 
 	const handleTradeTicker = (ticker) => {
@@ -98,7 +117,12 @@ export default function App() {
 				onSpeedChange={setSpeed}
 				onJump={jumpToIndex}
 			/>
-			{error ? <div className="error-banner">{error}</div> : null}
+			{error ? (
+				<div className="error-banner glass-card" role="alert">
+					<p className="eyebrow">Request Error</p>
+					<pre>{error}</pre>
+				</div>
+			) : null}
 			{loading ? <div className="loading-state">Loading historical replay...</div> : null}
 			{!loading ? (
 				<Routes>

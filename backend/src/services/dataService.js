@@ -4,10 +4,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const RAW_DATA_PATH = path.join(
-	__dirname,
-	"../data/historical_stock_prices_2015_2025.csv"
-);
+const RAW_DATA_RELATIVE_PATH = "historical_stock_prices_2015_2025.csv";
 const START_DATE = new Date("2015-01-02T00:00:00Z");
 const IGNORED_TOKENS = new Set([
 	"PLC",
@@ -23,6 +20,39 @@ const IGNORED_TOKENS = new Set([
 ]);
 
 let cachedDataset = null;
+
+function resolveRawDataPath() {
+	const candidates = [
+		path.resolve(__dirname, "../data", RAW_DATA_RELATIVE_PATH),
+		path.resolve(
+			process.cwd(),
+			"projects",
+			"Stock Exchange",
+			"backend",
+			"src",
+			"data",
+			RAW_DATA_RELATIVE_PATH
+		),
+		path.resolve(
+			"/var/task",
+			"projects",
+			"Stock Exchange",
+			"backend",
+			"src",
+			"data",
+			RAW_DATA_RELATIVE_PATH
+		),
+	];
+
+	const rawDataPath = candidates.find((candidate) => fs.existsSync(candidate));
+	if (rawDataPath) {
+		return rawDataPath;
+	}
+
+	throw new Error(
+		`Historical stock data file not found. Looked in: ${candidates.join(" | ")}`
+	);
+}
 
 function splitCsvLine(line) {
 	const cells = [];
@@ -64,7 +94,7 @@ function buildTicker(name, index, usedTickers) {
 		.filter(Boolean)
 		.filter((token) => !IGNORED_TOKENS.has(token));
 
-	// Builds pseudo-tickers from company names. Makes sure the names are always generated the same way.
+	// Builds deterministic pseudo-tickers from company names in the wide CSV.
 	let baseTicker = cleanedTokens
 		.slice(0, 4)
 		.map((token, tokenIndex) => (tokenIndex === 0 ? token.slice(0, 3) : token[0]))
@@ -87,7 +117,6 @@ function buildTicker(name, index, usedTickers) {
 	return ticker;
 }
 
-// Generates a sequential list of trading-day dates (Mon-Fri only) from START_DATE.
 function buildTradingDates(length) {
 	const dates = [];
 	const current = new Date(START_DATE);
@@ -103,7 +132,6 @@ function buildTradingDates(length) {
 	return dates;
 }
 
-// Forward-fills missing values with the latest known price; leading gaps are filled with the first valid price.
 function normalizeSeries(values) {
 	const firstValid = values.find((value) => value !== null);
 
@@ -112,6 +140,7 @@ function normalizeSeries(values) {
 	}
 
 	const normalized = [];
+	// Forward-fill sparse cells so the replay always has a usable close value.
 	let lastKnown = firstValid;
 
 	for (const value of values) {
@@ -132,7 +161,8 @@ function loadMarketDataset() {
 		return cachedDataset;
 	}
 
-	const rawCsv = fs.readFileSync(RAW_DATA_PATH, "utf8");
+	const rawDataPath = resolveRawDataPath();
+	const rawCsv = fs.readFileSync(rawDataPath, "utf8");
 	const lines = rawCsv.split(/\r?\n/).filter((line) => line.trim().length > 0);
 	const parsedRows = lines.map(splitCsvLine);
 	// Wide format: one row per company, remaining columns are sequential prices.
@@ -154,7 +184,6 @@ function loadMarketDataset() {
 				return null;
 			}
 
-			// Extract price values for each day, padding to maxSeriesLength and marking missing/invalid values as null.
 			const rawSeries = Array.from({ length: maxSeriesLength }, (_, dayIndex) => {
 				const rawValue = row[dayIndex + 1];
 				if (rawValue === undefined || rawValue === null || rawValue.trim() === "") {

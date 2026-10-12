@@ -4,17 +4,33 @@
 const dataService = require("./dataService");
 
 const marketDataset = dataService.loadMarketDataset();
+const DEFAULT_SESSION_ID = "default";
+const simulationStatesBySession = new Map();
 
-const simulationState = {
-	currentIndex: 0,
-};
+function getSessionId(sessionId) {
+	return sessionId || DEFAULT_SESSION_ID;
+}
+
+function getSimulationStateForSession(sessionId) {
+	const safeSessionId = getSessionId(sessionId);
+
+	if (!simulationStatesBySession.has(safeSessionId)) {
+		simulationStatesBySession.set(safeSessionId, {
+			currentIndex: 0,
+		});
+	}
+
+	return simulationStatesBySession.get(safeSessionId);
+}
 
 function clampIndex(index) {
 	// Guards against invalid jumps and keeps replay in known bounds.
 	return Math.max(0, Math.min(index, marketDataset.dates.length - 1));
 }
 
-function getSimulationState() {
+function getSimulationState(sessionId) {
+	const simulationState = getSimulationStateForSession(sessionId);
+
 	return {
 		currentIndex: simulationState.currentIndex,
 		currentDate: marketDataset.dates[simulationState.currentIndex],
@@ -23,22 +39,26 @@ function getSimulationState() {
 	};
 }
 
-function advanceSimulation(steps = 1) {
+function advanceSimulation(sessionId, steps = 1) {
+	const simulationState = getSimulationStateForSession(sessionId);
 	simulationState.currentIndex = clampIndex(simulationState.currentIndex + Math.max(1, steps));
-	return getSimulationState();
+	return getSimulationState(sessionId);
 }
 
-function jumpToIndex(index) {
+function jumpToIndex(sessionId, index) {
+	const simulationState = getSimulationStateForSession(sessionId);
 	simulationState.currentIndex = clampIndex(index);
-	return getSimulationState();
+	return getSimulationState(sessionId);
 }
 
-function resetSimulation() {
+function resetSimulation(sessionId) {
+	const simulationState = getSimulationStateForSession(sessionId);
 	simulationState.currentIndex = 0;
-	return getSimulationState();
+	return getSimulationState(sessionId);
 }
 
-function getCurrentPrice(ticker) {
+function getCurrentPrice(sessionId, ticker) {
+	const simulationState = getSimulationStateForSession(sessionId);
 	const stock = dataService.getStockByTicker(ticker);
 	if (!stock) {
 		return null;
@@ -47,7 +67,8 @@ function getCurrentPrice(ticker) {
 	return stock.series[simulationState.currentIndex]?.close ?? null;
 }
 
-function getSeriesForTicker(ticker) {
+function getSeriesForTicker(sessionId, ticker) {
+	const simulationState = getSimulationStateForSession(sessionId);
 	const stock = dataService.getStockByTicker(ticker);
 	if (!stock) {
 		return null;
@@ -63,7 +84,8 @@ function getSeriesForTicker(ticker) {
 	};
 }
 
-function getMarketSummary() {
+function getMarketSummary(sessionId) {
+	const simulationState = getSimulationStateForSession(sessionId);
 	return dataService.getAllStocks().map((stock) => {
 		const currentPoint = stock.series[simulationState.currentIndex];
 		const previousPoint = stock.series[Math.max(0, simulationState.currentIndex - 1)] ?? currentPoint;

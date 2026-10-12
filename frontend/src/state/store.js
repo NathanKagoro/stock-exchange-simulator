@@ -1,4 +1,4 @@
-// Global state management with Zustand
+// Global state management (Zustand or Redux)
 // Stores:
 // - current simulation time
 // - selected stock
@@ -33,6 +33,7 @@ export const useAppStore = create((set, get) => ({
 	},
 	recommendations: [],
 	simulation: defaultSimulation,
+	isAdvancing: false,
 	setError: (error) => set({ error }),
 	setPlayback: (isPlaying) =>
 		set((state) => ({
@@ -122,11 +123,42 @@ export const useAppStore = create((set, get) => ({
 		}
 	},
 	advanceSimulation: async (steps = 1) => {
+		if (get().isAdvancing) {
+			return;
+		}
+
+		set({ isAdvancing: true });
+
 		try {
-			await api.advanceSimulation(steps);
-			await get().refreshDashboard();
+			const previousTicker = get().selectedTicker;
+			const marketState = await api.advanceSimulation(steps);
+			const market = marketState?.market ?? [];
+			const portfolio = marketState?.portfolio;
+			const recommendations = marketState?.recommendations;
+			const nextTicker = market.some((stock) => stock.ticker === previousTicker)
+				? previousTicker
+				: market[0]?.ticker ?? "";
+
+			set((state) => ({
+				error: null,
+				selectedTicker: nextTicker,
+				marketStocks: market,
+				portfolio: portfolio ?? state.portfolio,
+				recommendations: recommendations ?? state.recommendations,
+				simulation: {
+					...state.simulation,
+					...(marketState?.simulation ?? {}),
+				},
+			}));
+
+			if (nextTicker && nextTicker !== previousTicker) {
+				const pricePayload = await api.fetchStockPrices(nextTicker);
+				set({ marketSeries: pricePayload.series ?? [] });
+			}
 		} catch (error) {
 			set({ error: error.message });
+		} finally {
+			set({ isAdvancing: false });
 		}
 	},
 	jumpToIndex: async (index) => {
