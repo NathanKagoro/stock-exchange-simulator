@@ -49,7 +49,7 @@ export function formatPrice(units) {
 }
 
 export function formatPercent(value, options = { showPlus: true }) {
-	if (!Number.isFinite(value)) return "—";
+	if (!Number.isFinite(value)) return "n/a";
 	return withSign(`${percent.format(Math.abs(value))}%`, Number(value.toFixed(2)), options);
 }
 
@@ -77,7 +77,7 @@ export function formatDate(iso) {
 	return dateFormat.format(new Date(`${iso}T00:00:00Z`));
 }
 
-/** "Aug ’16" — unambiguous month + year for axis ticks. */
+/** "Aug ’16": unambiguous month + year for axis ticks. */
 export function formatShortDate(iso) {
 	if (!iso) return "";
 	return `${monthOnly.format(new Date(`${iso}T00:00:00Z`))} \u2019${iso.slice(2, 4)}`;

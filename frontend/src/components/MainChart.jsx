@@ -150,7 +150,7 @@ export function MainChart({ onTrade }) {
 				{data.length > 1 ? (
 					<PriceChart data={data} dates={market.dates} up={rangeChange >= 0} />
 				) : (
-					<p className="empty-state">Press play to start the replay — the chart fills in as days pass.</p>
+					<p className="empty-state">Press play to start the replay. The chart fills in as the days pass.</p>
 				)}
 			</div>
 		</section>

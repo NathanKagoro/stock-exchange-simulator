@@ -141,7 +141,7 @@ export const actions = {
 		const { market } = get();
 		if (!market) return;
 		set({ isPlaying: false, day: 0, ledger: createSeedLedger(market) });
-		showToast("info", "Replay reset — back to day one with £100,000.");
+		showToast("info", "Replay reset. You're back on day one with £100,000.");
 	},
 	selectTicker(ticker) {
 		if (get().market?.indexByTicker.has(ticker)) set({ selectedTicker: ticker });

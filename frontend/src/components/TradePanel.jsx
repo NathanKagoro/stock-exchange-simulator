@@ -135,7 +135,7 @@ export function TradePanel() {
 			<dl className="trade-summary num" id={hintId}>
 				<div>
 					<dt>Estimated {validQuantity ? "cost / proceeds" : "total"}</dt>
-					<dd>{validQuantity ? formatMoney(previewTotal) : "—"}</dd>
+					<dd>{validQuantity ? formatMoney(previewTotal) : "n/a"}</dd>
 				</div>
 				<div>
 					<dt>Cash available</dt>

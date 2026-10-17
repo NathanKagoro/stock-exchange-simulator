@@ -122,7 +122,7 @@ export function validateTrade(market, ledger, { side, ticker, quantity, day }) {
 
 	const total = lineValuePennies(units, qty);
 	if (side === "buy" && total > state.cash) {
-		return { ...fail(`Not enough cash — you can afford up to ${max.toLocaleString("en-GB")} shares.`), total };
+		return { ...fail(`Not enough cash. You can afford up to ${max.toLocaleString("en-GB")} shares.`), total };
 	}
 	if (side === "sell" && held === 0) return { ...fail(`You don't hold any ${ticker}.`), total };
 	if (side === "sell" && qty > held) {

@@ -1,6 +1,6 @@
-# LSE Replay — Stock Exchange simulator
+# LSE Replay: Stock Exchange simulator
 
-Replay ten years of London Stock Exchange daily closes (Apr 2015 – Mar 2025, 1,277 companies)
+Replay ten years of London Stock Exchange daily closes (Apr 2015 to Mar 2025, 1,277 companies)
 with £100,000 of virtual cash. Buy and sell at each replay day's close and watch your portfolio
 value change. Live at [nathankagoro.com/stock](https://nathankagoro.com/stock/).
 

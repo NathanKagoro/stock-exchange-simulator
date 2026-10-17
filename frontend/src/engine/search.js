@@ -35,7 +35,7 @@ export function searchStocks(market, query, limit = Infinity) {
 }
 
 export const SORTS = [
-	{ id: "az", label: "A–Z" },
+	{ id: "az", label: "A to Z" },
 	{ id: "gainers", label: "Top gainers" },
 	{ id: "losers", label: "Top losers" },
 	{ id: "movers", label: "Biggest movers" },
